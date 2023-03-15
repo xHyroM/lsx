@@ -52,7 +52,7 @@ fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
             Item::Directory(dir) => {
                 println!(
                     "{:<15} {:<20} {}",
-                    format_size(if !options.recursive {
+                    format_size(if options.recursive {
                         dir_size(dir)
                     } else {
                         0
