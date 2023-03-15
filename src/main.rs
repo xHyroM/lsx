@@ -11,7 +11,7 @@ mod utils;
 
 pub struct Options {
     recursive: bool,
-    disable_dir_size: bool,
+    print_all: bool,
 }
 
 fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
@@ -52,7 +52,7 @@ fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
             Item::Directory(dir) => {
                 println!(
                     "{:<15} {:<20} {}",
-                    format_size(if !options.disable_dir_size {
+                    format_size(if !options.recursive {
                         dir_size(dir)
                     } else {
                         0
@@ -67,7 +67,7 @@ fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
                     format!("{}│ ", prefix)
                 };
 
-                if options.recursive {
+                if options.recursive && options.print_all {
                     print_tree(&dir.files, &new_prefix, &options);
                 }
             }
@@ -79,12 +79,11 @@ fn main() -> () {
     let args: Vec<String> = env::args().collect();
     let recursive =
         args.contains(&String::from("--recursive")) || args.contains(&String::from("-r"));
-    let disable_dir_size = (args.contains(&String::from("--disable-dir-size"))
-        || args.contains(&String::from("-d")))
-        && !recursive;
+    let print_all = args.contains(&String::from("--all")) || args.contains(&String::from("-a"));
+
     let options = &Options {
         recursive: recursive,
-        disable_dir_size: disable_dir_size,
+        print_all: print_all,
     };
 
     match fs::read_dir(".", options) {

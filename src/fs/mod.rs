@@ -57,7 +57,7 @@ pub fn read_dir(path: &str, options: &Options) -> io::Result<Vec<Item>> {
                     Directory {
                         name: name.to_owned(),
                         metadata: metadata,
-                        files: if !options.disable_dir_size {
+                        files: if options.recursive {
                             if let Ok(mut files) = read_dir(
                                 (path.to_owned() + "\\" + &name.as_str()).as_str(),
                                 options,
