@@ -1,6 +1,6 @@
 use chrono::{self};
-use utils::format_size;
 use std::env;
+use utils::format_size;
 
 use fs::items::Item;
 
@@ -9,7 +9,12 @@ use crate::fs::dir_size;
 mod fs;
 mod utils;
 
-fn print_tree(items: &Vec<Item>, prefix: &str, recursive: bool) {
+pub struct Options {
+    recursive: bool,
+    disable_dir_size: bool,
+}
+
+fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
     for (i, item) in items.iter().enumerate() {
         let metadata = match item {
             Item::File(file) => &file.metadata,
@@ -47,7 +52,11 @@ fn print_tree(items: &Vec<Item>, prefix: &str, recursive: bool) {
             Item::Directory(dir) => {
                 println!(
                     "{:<15} {:<20} {}",
-                    format_size(dir_size(dir)),
+                    format_size(if !options.disable_dir_size {
+                        dir_size(dir)
+                    } else {
+                        0
+                    }),
                     modified,
                     format!("{} 📁 {}", new_prefix, dir.name)
                 );
@@ -58,8 +67,8 @@ fn print_tree(items: &Vec<Item>, prefix: &str, recursive: bool) {
                     format!("{}│ ", prefix)
                 };
 
-                if recursive {
-                    print_tree(&dir.files, &new_prefix, recursive);
+                if options.recursive {
+                    print_tree(&dir.files, &new_prefix, &options);
                 }
             }
         }
@@ -68,14 +77,20 @@ fn print_tree(items: &Vec<Item>, prefix: &str, recursive: bool) {
 
 fn main() -> () {
     let args: Vec<String> = env::args().collect();
-    let recursive = args.contains(&String::from("--recursive")) || args.contains(&String::from("-r"));
+    let recursive =
+        args.contains(&String::from("--recursive")) || args.contains(&String::from("-r"));
+    let disable_dir_size = (args.contains(&String::from("--disable-dir-size"))
+        || args.contains(&String::from("-d")))
+        && !recursive;
+    let options = &Options {
+        recursive: recursive,
+        disable_dir_size: disable_dir_size,
+    };
 
-    match fs::read_dir(
-        ".",
-    ) {
+    match fs::read_dir(".", options) {
         Ok(vec) => {
             println!("{:<15} {:<20} {}", "Size", "Last Modified", "Tree");
-            print_tree(&vec, "", recursive);
+            print_tree(&vec, "", options);
         }
         Err(e) => println!("{:?}", e),
     }

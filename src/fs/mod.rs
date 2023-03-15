@@ -3,6 +3,8 @@ use std::{
     io,
 };
 
+use crate::Options;
+
 use self::items::{Directory, File, Item, ItemMetadata};
 
 pub mod items;
@@ -26,7 +28,7 @@ pub fn dir_size(directory: &Directory) -> u64 {
     size
 }
 
-pub fn read_dir(path: &str,) -> io::Result<Vec<Item>> {
+pub fn read_dir(path: &str, options: &Options) -> io::Result<Vec<Item>> {
     let mut vec = Vec::new();
 
     for file in fs::read_dir(path)? {
@@ -55,9 +57,10 @@ pub fn read_dir(path: &str,) -> io::Result<Vec<Item>> {
                     Directory {
                         name: name.to_owned(),
                         metadata: metadata,
-                        files: 
+                        files: if !options.disable_dir_size {
                             if let Ok(mut files) = read_dir(
                                 (path.to_owned() + "\\" + &name.as_str()).as_str(),
+                                options,
                             ) {
                                 files.sort_by(|a, b| match (a, b) {
                                     (Item::Directory(a), Item::Directory(b)) => a.name.cmp(&b.name),
@@ -69,6 +72,9 @@ pub fn read_dir(path: &str,) -> io::Result<Vec<Item>> {
                                 });
 
                                 files
+                            } else {
+                                Vec::new()
+                            }
                         } else {
                             Vec::new()
                         },
