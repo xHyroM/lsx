@@ -1,8 +1,7 @@
-use chrono::{self};
 use std::env;
-use utils::format_size;
+use utils::{format_size, readable_systemtime};
 
-use fs::items::Item;
+use fs::items::{Item};
 
 use crate::fs::dir_size;
 
@@ -12,6 +11,34 @@ mod utils;
 pub struct Options {
     recursive: bool,
     print_all: bool,
+    show_created_date: bool,
+    show_last_accessed_date: bool,
+}
+
+fn print_item_info(options: &Options, size: String, modified: String, last_accessed: String, created: String, item: &Item, new_prefix: String) {
+    println!(
+        "{:<15} {} {}",
+        size,
+        format!(
+            "{:<20}{}{}",
+            modified,
+            if options.show_last_accessed_date {
+                format!("{:<20}", last_accessed)
+            } else {
+                String::new()
+            },
+            if options.show_created_date {
+                format!("{:<20}", created)
+            } else {
+                String::new()
+            }
+        ),
+
+        match item {
+            Item::File(file) => format!("{} 📄 {}", new_prefix, file.name),
+            Item::Directory(dir) => format!("{} 📁 {}", new_prefix, dir.name),
+        }
+    );
 }
 
 fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
@@ -29,9 +56,17 @@ fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
         }
 
         let modified = match metadata.modified {
-            Some(modified) => chrono::DateTime::<chrono::Local>::from(modified)
-                .format("%b %e %H:%M")
-                .to_string(),
+            Some(modified) => readable_systemtime(modified),
+            None => "-".to_string(),
+        };
+
+        let last_accessed = match metadata.accessed {
+            Some(last_accessed) => readable_systemtime(last_accessed),
+            None => "-".to_string(),
+        };
+
+        let created = match metadata.created {
+            Some(created) => readable_systemtime(created),
             None => "-".to_string(),
         };
 
@@ -41,25 +76,11 @@ fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
         };
 
         match item {
-            Item::File(file) => {
-                println!(
-                    "{:<15} {:<20} {}",
-                    size,
-                    modified,
-                    format!("{} 📄 {}", new_prefix, file.name)
-                );
+            Item::File(_) => {
+                print_item_info(options, size, modified, last_accessed, created, item, new_prefix);
             }
             Item::Directory(dir) => {
-                println!(
-                    "{:<15} {:<20} {}",
-                    format_size(if options.recursive {
-                        dir_size(dir)
-                    } else {
-                        0
-                    }),
-                    modified,
-                    format!("{} 📁 {}", new_prefix, dir.name)
-                );
+                print_item_info(options, format_size(if options.recursive { dir_size(dir) } else { 0 }), modified, last_accessed, created, item, new_prefix);
 
                 let new_prefix = if i == items.len() - 1 {
                     format!("{}  ", prefix)
@@ -80,15 +101,40 @@ fn main() -> () {
     let recursive =
         args.contains(&String::from("--recursive")) || args.contains(&String::from("-r"));
     let print_all = args.contains(&String::from("--all")) || args.contains(&String::from("-a"));
+    let show_created_date = args.contains(&String::from("--show-created--date"))
+        || args.contains(&String::from("-scd"));
+    let show_last_accessed_date = args.contains(&String::from("--show-last-accessed-date"))
+        || args.contains(&String::from("-slad"));
 
     let options = &Options {
         recursive: recursive,
         print_all: print_all,
+        show_created_date: show_created_date,
+        show_last_accessed_date: show_last_accessed_date,
     };
+
+    println!(
+        "{:<15} {} {}",
+        "Size",
+        format!(
+            "{:<20}{}{}",
+            "Last Modified",
+            if options.show_last_accessed_date {
+                format!("{:<20}", "Last Accessed")
+            } else {
+                String::new()
+            },
+            if options.show_created_date {
+                format!("{:<20}", "Created At")
+            } else {
+                String::new()
+            }
+        ),
+        "Tree"
+    );
 
     match fs::read_dir(".", options) {
         Ok(vec) => {
-            println!("{:<15} {:<20} {}", "Size", "Last Modified", "Tree");
             print_tree(&vec, "", options);
         }
         Err(e) => println!("{:?}", e),
