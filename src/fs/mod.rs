@@ -39,10 +39,10 @@ pub fn read_dir(read_path: &str, options: &Options) -> io::Result<Vec<Item>> {
             let path = file.path().into_os_string().into_string().unwrap();
             let metadata = if let Ok(metadata) = file.metadata() {
                 ItemMetadata {
-                    size: Some(metadata.len()),
-                    modified: metadata.modified().ok(),
-                    accessed: metadata.accessed().ok(),
-                    created: metadata.created().ok(),
+                    size: if options.long { Some(metadata.len()) } else { None },
+                    modified: if options.long { metadata.modified().ok() } else { None },
+                    accessed: if options.show_last_accessed_date { metadata.accessed().ok() } else { None },
+                    created: if options.show_created_date { metadata.created().ok() } else { None },
                 }
             } else {
                 ItemMetadata {
