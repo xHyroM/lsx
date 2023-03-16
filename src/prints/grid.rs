@@ -1,3 +1,4 @@
+use term_size;
 use ansi_term::Color::{Blue, Yellow};
 
 use crate::{
@@ -6,9 +7,8 @@ use crate::{
 };
 
 pub fn print_grid(items: &Vec<Item>, options: &Options) {
-    let length = items.len();
-    let size = (length as f32).sqrt().ceil() as usize;
-    let max_len = items
+    let (width, _) = term_size::dimensions().unwrap_or((80, 20));
+    let max_width = items
         .iter()
         .map(|item| match item {
             Item::File(file) => file.name.len(),
@@ -17,32 +17,47 @@ pub fn print_grid(items: &Vec<Item>, options: &Options) {
         .max()
         .unwrap_or(0);
 
+    let spacing = 4;
+
+    let num_cols = width / (max_width + 2).max(1);
+    let num_rows = (items.len() as f64 / num_cols as f64).ceil() as usize;
+    let num_elements_last_row = items.len() - (num_rows - 1) * num_cols;
+    let last_row_has_fewer_elements = num_elements_last_row < num_cols;
+    
     let mut next_items: Vec<&Directory> = Vec::new();
 
-    for i in 0..size {
-        for j in 0..size {
-            let index = i * size + j;
-            if index < length {
-                let item = &items[index];
+    let mut index = 0;
+    for row in 0..num_rows {
+        let mut num_cols_this_row = num_cols;
+        if last_row_has_fewer_elements && row == num_rows - 1 {
+            num_cols_this_row = num_elements_last_row;
+        }
+        for col in 0..num_cols_this_row {
+            if index > items.len() {
+                break;
+            }
 
-                match item {
-                    Item::File(file) => {
-                        let padding = max_len - file.name.len();
-                        print!("{}{}", file.name, " ".repeat(padding));
-                    }
-                    Item::Directory(dir) => {
-                        let name = dir.name.to_owned() + "/";
-                        let padding = max_len - name.len();
-                        print!("{}{}", Blue.paint(name), " ".repeat(padding));
+            let item = &items[index];
+            match item {
+                Item::File(file) => {
+                    print!("{:<width$}", file.name, width = max_width);
+                }
+                Item::Directory(dir) => {
+                    let name = format!("{}/", dir.name);
+                    let padded_name = format!("{:<width$}", name, width = max_width);
+                    print!("{}", Blue.paint(padded_name));
 
-                        if options.recursive {
-                            next_items.push(&dir);
-                        }
+                    if options.recursive {
+                        next_items.push(&dir);
                     }
                 }
-
-                print!("  ");
             }
+
+            if col < num_cols_this_row - 1 {
+                print!("{:width$}", "", width = spacing);
+            }
+
+            index += 1;
         }
 
         println!();

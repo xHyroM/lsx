@@ -1,6 +1,6 @@
 use std::{
     fs::{self},
-    io,
+    io
 };
 
 use crate::Options;
