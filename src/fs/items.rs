@@ -3,12 +3,14 @@ use std::time::SystemTime;
 #[derive(Debug)]
 pub struct File {
     pub name: String,
+    pub path: String,
     pub metadata: ItemMetadata,
 }
 
 #[derive(Debug)]
 pub struct Directory {
     pub name: String,
+    pub path: String,
     pub metadata: ItemMetadata,
     pub files: Vec<Item>,
 }

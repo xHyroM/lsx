@@ -28,14 +28,15 @@ pub fn dir_size(directory: &Directory) -> u64 {
     size
 }
 
-pub fn read_dir(path: &str, options: &Options) -> io::Result<Vec<Item>> {
+pub fn read_dir(read_path: &str, options: &Options) -> io::Result<Vec<Item>> {
     let mut vec = Vec::new();
 
-    for file in fs::read_dir(path)? {
+    for file in fs::read_dir(read_path)? {
         let file = file?;
 
         if let Ok(file_type) = file.file_type() {
             let name = file.file_name().into_string().unwrap();
+            let path = file.path().into_os_string().into_string().unwrap();
             let metadata = if let Ok(metadata) = file.metadata() {
                 ItemMetadata {
                     size: Some(metadata.len()),
@@ -56,10 +57,11 @@ pub fn read_dir(path: &str, options: &Options) -> io::Result<Vec<Item>> {
                 vec.push(Item::Directory({
                     Directory {
                         name: name.to_owned(),
+                        path: path,
                         metadata: metadata,
                         files: if options.recursive {
                             if let Ok(mut files) = read_dir(
-                                (path.to_owned() + "\\" + &name.as_str()).as_str(),
+                                (read_path.to_owned() + "\\" + &name.as_str()).as_str(),
                                 options,
                             ) {
                                 files.sort_by(|a, b| match (a, b) {
@@ -87,6 +89,7 @@ pub fn read_dir(path: &str, options: &Options) -> io::Result<Vec<Item>> {
             vec.push(Item::File({
                 File {
                     name: name,
+                    path: path,
                     metadata: metadata,
                 }
             }));
