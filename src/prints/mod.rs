@@ -1,11 +1,17 @@
 use crate::{fs::items::Item, Options};
 
 mod grid;
-mod long;
+mod tree;
 
-pub fn print_long(items: &Vec<Item>, prefix: &str, options: &Options) {
+#[derive(Debug, PartialEq)]
+pub enum PrintShow {
+    Grid,
+    Tree,
+}
+
+pub fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
     println!(
-        "{:<15} {} {}",
+        "{:<15} {} Tree",
         "Size",
         format!(
             "{:<20}{}{}",
@@ -20,11 +26,10 @@ pub fn print_long(items: &Vec<Item>, prefix: &str, options: &Options) {
             } else {
                 String::new()
             }
-        ),
-        "Tree"
+        )
     );
 
-    long::print_tree(items, prefix, options);
+    tree::print_tree(items, prefix, options);
 }
 
 pub fn print_grid(items: &Vec<Item>, options: &Options) {

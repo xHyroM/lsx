@@ -1,23 +1,34 @@
 use std::env;
 
-use prints::{print_grid, print_long};
+use prints::{print_grid, print_tree, PrintShow};
 
 mod fs;
 mod prints;
 mod utils;
 
 pub struct Options {
-    long: bool,
+    show: PrintShow,
     recursive: bool,
     print_all: bool,
     show_created_date: bool,
     show_last_accessed_date: bool,
 }
 
-fn main() -> () {
+fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let long = args.contains(&String::from("--long")) || args.contains(&String::from("-l"));
+    let show = if args.iter().any(|x| x.contains("--show")) {
+        let index = args.iter().position(|x| x.starts_with("--show")).unwrap();
+        if args[index].contains('=') {
+            print!("{} ", args[index].split('=').collect::<Vec<&str>>()[1]);
+            args[index].split('=').collect::<Vec<&str>>()[1].to_string()
+        } else {
+            args[index + 1].clone()
+        }
+    } else {
+        String::from("grid")
+    };
+
     let recursive =
         args.contains(&String::from("--recursive")) || args.contains(&String::from("-r"));
     let print_all = args.contains(&String::from("--all")) || args.contains(&String::from("-a"));
@@ -27,21 +38,27 @@ fn main() -> () {
         || args.contains(&String::from("-slad"));
 
     let options = &Options {
-        long: long,
-        recursive: recursive,
-        print_all: print_all,
-        show_created_date: show_created_date,
-        show_last_accessed_date: show_last_accessed_date,
+        show: match show.as_str() {
+            "grid" => PrintShow::Grid,
+            "tree" => PrintShow::Tree,
+            _ => PrintShow::Grid,
+        },
+        recursive,
+        print_all,
+        show_created_date,
+        show_last_accessed_date,
     };
 
     match fs::read_dir(".", options) {
         Ok(vec) => {
-            if options.long {
-                print_long(&vec, "", options);
-                return;
+            match options.show {
+                PrintShow::Tree => {
+                    print_tree(&vec, "", options);
+                }
+                PrintShow::Grid => {
+                    print_grid(&vec, options);
+                }
             }
-
-            print_grid(&vec, options);
         }
         Err(e) => println!("{:?}", e),
     }

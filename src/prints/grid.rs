@@ -1,4 +1,3 @@
-use term_size;
 use ansi_term::Color::{Blue, Yellow};
 
 use crate::{
@@ -21,7 +20,7 @@ pub fn print_grid(items: &Vec<Item>, options: &Options) {
 
     let num_cols = width / (max_width + 2).max(1);
     let num_rows = (items.len() as f64 / num_cols as f64).ceil() as usize;
-    let num_elements_last_row = items.len() - (num_rows - 1) * num_cols;
+    let num_elements_last_row = items.len() - (if num_rows == 0 { 1 } else { num_rows } - 1) * num_cols;
     let last_row_has_fewer_elements = num_elements_last_row < num_cols;
     
     let mut next_items: Vec<&Directory> = Vec::new();
@@ -48,7 +47,7 @@ pub fn print_grid(items: &Vec<Item>, options: &Options) {
                     print!("{}", Blue.paint(padded_name));
 
                     if options.recursive {
-                        next_items.push(&dir);
+                        next_items.push(dir);
                     }
                 }
             }
@@ -65,7 +64,7 @@ pub fn print_grid(items: &Vec<Item>, options: &Options) {
 
     for next_item in next_items {
         println!();
-        print!("{}:\n", Yellow.paint(&next_item.path));
+        println!("{}:", Yellow.paint(&next_item.path));
 
         if options.print_all {
             print_grid(&next_item.files, options);

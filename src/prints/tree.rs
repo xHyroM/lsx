@@ -101,7 +101,7 @@ pub fn print_tree(items: &Vec<Item>, prefix: &str, options: &Options) {
                 };
 
                 if options.recursive && options.print_all {
-                    print_tree(&dir.files, &new_prefix, &options);
+                    print_tree(&dir.files, &new_prefix, options);
                 }
             }
         }

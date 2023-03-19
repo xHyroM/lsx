@@ -3,7 +3,7 @@ use std::{
     io
 };
 
-use crate::Options;
+use crate::{Options, prints::PrintShow};
 
 use self::items::{Directory, File, Item, ItemMetadata};
 
@@ -20,7 +20,7 @@ pub fn dir_size(directory: &Directory) -> u64 {
                 }
             }
             Item::Directory(dir) => {
-                size += dir_size(&dir);
+                size += dir_size(dir);
             }
         }
     }
@@ -39,8 +39,8 @@ pub fn read_dir(read_path: &str, options: &Options) -> io::Result<Vec<Item>> {
             let path = file.path().into_os_string().into_string().unwrap();
             let metadata = if let Ok(metadata) = file.metadata() {
                 ItemMetadata {
-                    size: if options.long { Some(metadata.len()) } else { None },
-                    modified: if options.long { metadata.modified().ok() } else { None },
+                    size: if options.show == PrintShow::Tree { Some(metadata.len()) } else { None },
+                    modified: if options.show == PrintShow::Tree { metadata.modified().ok() } else { None },
                     accessed: if options.show_last_accessed_date { metadata.accessed().ok() } else { None },
                     created: if options.show_created_date { metadata.created().ok() } else { None },
                 }
@@ -57,11 +57,11 @@ pub fn read_dir(read_path: &str, options: &Options) -> io::Result<Vec<Item>> {
                 vec.push(Item::Directory({
                     Directory {
                         name: name.to_owned(),
-                        path: path,
-                        metadata: metadata,
+                        path,
+                        metadata,
                         files: if options.recursive {
                             if let Ok(mut files) = read_dir(
-                                (read_path.to_owned() + "\\" + &name.as_str()).as_str(),
+                                format!("{}\\{}", read_path, name).as_str(),
                                 options,
                             ) {
                                 files.sort_by(|a, b| match (a, b) {
@@ -88,9 +88,9 @@ pub fn read_dir(read_path: &str, options: &Options) -> io::Result<Vec<Item>> {
 
             vec.push(Item::File({
                 File {
-                    name: name,
-                    path: path,
-                    metadata: metadata,
+                    name,
+                    path,
+                    metadata,
                 }
             }));
         }
