@@ -20,7 +20,6 @@ fn main() {
     let show = if args.iter().any(|x| x.contains("--show")) {
         let index = args.iter().position(|x| x.starts_with("--show")).unwrap();
         if args[index].contains('=') {
-            print!("{} ", args[index].split('=').collect::<Vec<&str>>()[1]);
             args[index].split('=').collect::<Vec<&str>>()[1].to_string()
         } else {
             args[index + 1].clone()
